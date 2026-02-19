@@ -1,0 +1,5 @@
+{
+  "name": "Mark2PDF Pro",
+  "description": "Production-grade, client-side Markdown to PDF converter with localStorage persistence.",
+  "requestFramePermissions": []
+}
