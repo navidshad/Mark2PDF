@@ -1,9 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Download, Settings2, Trash2, Github, Save } from 'lucide-react';
+import { FileText, Download, Settings2, Trash2, Github, Save, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { MarkdownEditor } from './components/MarkdownEditor';
 import { MarkdownPreview } from './components/MarkdownPreview';
 import { generatePDF } from './services/pdfService';
+import { convertMarkdownImagesToBase64 } from './services/imageService';
 import { PDFOptions, PageSize, Orientation } from './types';
 
 const STORAGE_KEY_CONTENT = 'mark2pdf_content';
@@ -46,6 +47,7 @@ const App: React.FC = () => {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +76,22 @@ const App: React.FC = () => {
   const handleClear = () => {
     if (window.confirm("Are you sure you want to clear all content?")) {
       setMarkdown("");
+    }
+  };
+  
+  const handleConvertImages = async () => {
+    setIsProcessingImages(true);
+    try {
+      const processed = await convertMarkdownImagesToBase64(markdown, (current, total) => {
+        console.log(`Processing images: ${current}/${total}`);
+      });
+      setMarkdown(processed);
+      alert("Image conversion complete! Remote links have been replaced with Base64 data.");
+    } catch (err) {
+      console.error("Failed to convert images:", err);
+      alert("Failed to convert some images. Check console for details.");
+    } finally {
+      setIsProcessingImages(false);
     }
   };
 
@@ -175,7 +193,16 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-100">
+          <div className="pt-6 border-t border-slate-100 space-y-3">
+            <button 
+              onClick={handleConvertImages}
+              disabled={isProcessingImages || !markdown}
+              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg border border-indigo-100 text-indigo-600 hover:bg-indigo-50 transition-all text-[11px] font-bold uppercase tracking-wider active:scale-[0.98] disabled:opacity-50"
+            >
+              {isProcessingImages ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+              <span>{isProcessingImages ? 'Converting...' : 'Embed Images (Base64)'}</span>
+            </button>
+
             <button 
               onClick={handleClear}
               className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg border border-red-100 text-red-600 hover:bg-red-50 transition-all text-[11px] font-bold uppercase tracking-wider active:scale-[0.98]"
